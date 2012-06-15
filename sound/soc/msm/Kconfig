@@ -73,6 +73,21 @@ config SND_SOC_QDSP6V2
 	 audio drivers. This includes q6asm, q6adm,
 	 q6afe interfaces to DSP using apr.
 
+config SND_SOC_MSM8960
+	tristate "SoC Machine driver for MSM8960 and APQ8064 boards"
+	depends on ARCH_MSM8960 || ARCH_APQ8064
+	select SND_SOC_VOICE
+	select SND_SOC_QDSP6
+	select SND_SOC_MSM_STUB
+	select SND_SOC_WCD9310
+	select SND_SOC_WCD9304
+	select SND_SOC_MSM_HOSTLESS_PCM
+	select SND_SOC_MSM_QDSP6_HDMI_AUDIO
+	#select SND_SOC_CS8427
+	default n
+	help
+	 To add support for SoC audio on MSM8960 and APQ8064 boards
+
 config AUDIO_OCMEM
 	bool "Enable OCMEM for audio/voice usecase"
 	depends on MSM_OCMEM
