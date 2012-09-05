@@ -125,6 +125,8 @@ config ARCH_FSM9900
 	select ARCH_SUPPORTS_MSI
 	select MIGHT_HAVE_PCI
 	select MSM_IRQ
+	select MSM_SCM if SMP
+	select USE_OF
 
 config ARCH_MDM9630
 	bool "MDM9630"
