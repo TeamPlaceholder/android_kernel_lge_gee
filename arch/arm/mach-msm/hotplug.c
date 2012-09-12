@@ -17,14 +17,7 @@
 #include <asm/smp_plat.h>
 #include <asm/vfp.h>
 
-#include <mach/jtag.h>
-
-#include "pm.h"
-#include "spm.h"
-
-static cpumask_t cpu_dying_mask;
-
-static DEFINE_PER_CPU(unsigned int, warm_boot_flag);
+#include "common.h"
 
 static inline void cpu_enter_lowpower(void)
 {
