@@ -138,6 +138,129 @@ config FB_MSM_LCDC_TRULY_HVGA_IPS3P2335_PT_PANEL
         Support for LCDC Truly HVGA PT panel
 
 
+config FB_MSM_LCDC_SAMSUNG_OLED_PT
+	bool
+	select FB_MSM_LCDC_PANEL
+	default n
+
+config FB_MSM_LCDC_NT35582_WVGA
+	bool
+	select FB_MSM_LCDC_PANEL
+	default n
+
+config FB_MSM_LCDC_WXGA
+	bool
+	select FB_MSM_LCDC_PANEL
+	default n
+
+config FB_MSM_MIPI_LGIT_VIDEO_WXGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_LGIT
+	default n
+
+config FB_MSM_LVDS_CHIMEI_WXGA
+	bool
+	select FB_MSM_LVDS
+	default n
+
+config FB_MSM_LVDS_FRC_FHD
+	bool
+	select FB_MSM_LVDS
+	default n
+
+config FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_TOSHIBA
+	default n
+
+config FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_TOSHIBA
+	default n
+
+config FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
+	bool
+	select FB_MSM_MIPI_DSI_TOSHIBA
+	default n
+
+config FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT
+	bool
+	select FB_MSM_MIPI_DSI_NOVATEK
+	default n
+
+config FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
+	bool
+	select FB_MSM_MIPI_DSI_NOVATEK
+	default n
+
+config FB_MSM_MIPI_ORISE_VIDEO_720P_PT
+	bool
+	select FB_MSM_MIPI_DSI_ORISE
+	default n
+
+config FB_MSM_MIPI_ORISE_CMD_720P_PT
+	bool
+	select FB_MSM_MIPI_DSI_ORISE
+	default n
+
+config FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_RENESAS
+	default n
+
+config FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_RENESAS
+	default n
+
+config FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_NT35510
+	default n
+
+config FB_MSM_MIPI_NT35510_CMD_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_NT35510
+	default n
+
+config FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
+        bool
+        select FB_MSM_MIPI_DSI_NT35516
+        default n
+
+config FB_MSM_MIPI_NT35516_CMD_QHD_PT
+        bool
+        select FB_MSM_MIPI_DSI_NT35516
+        default n
+
+
+config FB_MSM_MIPI_CHIMEI_WXGA
+	bool "LVDS Chimei WXGA Panel using Toshiba MIPI DSI-to-LVDS bridge."
+	select FB_MSM_MIPI_DSI_TC358764_DSI2LVDS
+	---help---
+	  Support for Chimei WXGA (1366x768) panel.
+	  The panel is using a serial LVDS input.
+	  The panel is connected to the host
+	  via Toshiba DSI-to-LVDS bridge.
+
+config FB_MSM_MIPI_CHIMEI_WUXGA
+	bool "LVDS Chimei WUXGA Panel using Toshiba MIPI DSI-to-LVDS bridge."
+	select FB_MSM_MIPI_DSI_TC358764_DSI2LVDS
+	---help---
+	  Support for Chimei WUXGA (1920x1200) panel.
+	  The panel is using a serial LVDS input.
+	  The panel is connected to the host
+	  via Toshiba DSI-to-LVDS bridge.
+
+config FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_TRULY
+
+config FB_MSM_MIPI_SIMULATOR_VIDEO
+	bool
+	select FB_MSM_MIPI_DSI_SIMULATOR
+	default n
+
 config FB_MSM_NO_MDP_PIPE_CTRL
 	depends on FB_MSM_OVERLAY
 	bool "Do not use mdp_pipe_ctrl"
