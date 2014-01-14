@@ -1853,9 +1853,13 @@ static void __init register_i2c_devices(void)
 #endif
 }
 
+static struct of_dev_auxdata apq8064_auxdata_lookup[] __initdata = {
+	{}
+};
+
 static void __init apq8064_common_init(void)
 {
-	//struct of_dev_auxdata *adata = apq8064_auxdata_lookup;
+	struct of_dev_auxdata *adata = apq8064_auxdata_lookup;
 	struct msm_rpmrs_level rpmrs_level;
 	platform_device_register(&msm_gpio_device);
 	msm_tsens_early_init(&apq_tsens_pdata);
@@ -1870,8 +1874,8 @@ static void __init apq8064_common_init(void)
 		pr_err("Failed to initialize XO votes\n");
 	msm_clock_init(&apq8064_clock_init_data);
 	apq8064_init_gpiomux();
-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-	//board_dt_populate(adata);
+	of_platform_populate(NULL, of_default_bus_match_table, adata, NULL);
+	board_dt_populate(adata);
 	apq8064_i2c_init();
 	register_i2c_devices();
 	apq8064_init_pmic();
