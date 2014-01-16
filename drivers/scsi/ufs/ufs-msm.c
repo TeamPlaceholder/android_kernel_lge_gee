@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2014, Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1216,6 +1216,7 @@ msm_ufs_cfg_timers(struct ufs_hba *hba, u32 gear, u32 hs, u32 rate)
 	u32 core_clk_period_in_ns;
 	u32 tx_clk_cycles_per_us = 0;
 	unsigned long core_clk_rate = 0;
+	u32 core_clk_cycles_per_us = 0;
 
 	static u32 pwm_fr_table[][2] = {
 		{UFS_PWM_G1, 0x1},
@@ -1248,6 +1249,9 @@ msm_ufs_cfg_timers(struct ufs_hba *hba, u32 gear, u32 hs, u32 rate)
 	if (core_clk_rate < DEFAULT_CLK_RATE_HZ)
 		core_clk_rate = DEFAULT_CLK_RATE_HZ;
 
+	core_clk_cycles_per_us = core_clk_rate / USEC_PER_SEC;
+	ufshcd_writel(hba, core_clk_cycles_per_us, REG_UFS_SYS1CLK_1US);
+
 	core_clk_period_in_ns = NSEC_PER_SEC / core_clk_rate;
 	core_clk_period_in_ns <<= OFFSET_CLK_NS_REG;
 	core_clk_period_in_ns &= MASK_CLK_NS_REG;
@@ -1256,7 +1260,7 @@ msm_ufs_cfg_timers(struct ufs_hba *hba, u32 gear, u32 hs, u32 rate)
 	case FASTAUTO_MODE:
 	case FAST_MODE:
 		if (rate == PA_HS_MODE_A) {
-			if (gear >= ARRAY_SIZE(hs_fr_table_rA)) {
+			if (gear > ARRAY_SIZE(hs_fr_table_rA)) {
 				dev_err(hba->dev,
 					"%s: index %d exceeds table size %d\n",
 					__func__, gear,
@@ -1265,7 +1269,7 @@ msm_ufs_cfg_timers(struct ufs_hba *hba, u32 gear, u32 hs, u32 rate)
 			}
 			tx_clk_cycles_per_us = hs_fr_table_rA[gear-1][1];
 		} else if (rate == PA_HS_MODE_B) {
-			if (gear >= ARRAY_SIZE(hs_fr_table_rB)) {
+			if (gear > ARRAY_SIZE(hs_fr_table_rB)) {
 				dev_err(hba->dev,
 					"%s: index %d exceeds table size %d\n",
 					__func__, gear,
@@ -1281,7 +1285,7 @@ msm_ufs_cfg_timers(struct ufs_hba *hba, u32 gear, u32 hs, u32 rate)
 		break;
 	case SLOWAUTO_MODE:
 	case SLOW_MODE:
-		if (gear >= ARRAY_SIZE(pwm_fr_table)) {
+		if (gear > ARRAY_SIZE(pwm_fr_table)) {
 			dev_err(hba->dev,
 					"%s: index %d exceeds table size %d\n",
 					__func__, gear,
@@ -1664,6 +1668,10 @@ static void msm_ufs_advertise_quirks(struct ufs_hba *hba)
 			      | UFSHCD_QUIRK_BROKEN_CAP_64_BIT_0
 			      | UFSHCD_QUIRK_DELAY_BEFORE_DME_CMDS
 			      | UFSHCD_QUIRK_BROKEN_2_TX_LANES
+			      | UFSHCD_QUIRK_BROKEN_SUSPEND);
+	else if ((major == 0x1) && (minor == 0x001) && (step == 0x0001))
+		hba->quirks |= (UFSHCD_QUIRK_BROKEN_HIBERN8
+			      | UFSHCD_QUIRK_DELAY_BEFORE_DME_CMDS
 			      | UFSHCD_QUIRK_BROKEN_SUSPEND);
 }
 
@@ -2115,6 +2123,19 @@ static int msm_ufs_phy_remove(struct platform_device *pdev)
 	return 0;
 }
 
+void msm_ufs_clk_scale_notify(struct ufs_hba *hba)
+{
+	struct msm_ufs_host *host = hba->priv;
+	struct ufs_pa_layer_attr *dev_req_params = &host->dev_req_params;
+
+	if (!dev_req_params)
+		return;
+
+	msm_ufs_cfg_timers(hba, dev_req_params->gear_rx,
+				dev_req_params->pwr_rx,
+				dev_req_params->hs_rate);
+	msm_ufs_update_bus_bw_vote(host);
+}
 /**
  * struct ufs_hba_msm_vops - UFS MSM specific variant operations
  *
@@ -2125,6 +2146,7 @@ const struct ufs_hba_variant_ops ufs_hba_msm_vops = {
 	.name                   = "msm",
 	.init                   = msm_ufs_init,
 	.exit                   = msm_ufs_exit,
+	.clk_scale_notify	= msm_ufs_clk_scale_notify,
 	.setup_clocks           = msm_ufs_setup_clocks,
 	.hce_enable_notify      = msm_ufs_hce_enable_notify,
 	.link_startup_notify    = msm_ufs_link_startup_notify,

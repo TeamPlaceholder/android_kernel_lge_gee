@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -18,9 +18,6 @@
 #include <linux/slab.h>
 #include <linux/iommu.h>
 #include <linux/msm_kgsl.h>
-#include <mach/socinfo.h>
-#include <mach/msm_iomap.h>
-#include <mach/board.h>
 #include <linux/msm_iommu_domains.h>
 #include <stddef.h>
 
@@ -382,8 +379,8 @@ static int kgsl_iommu_fault_handler(struct iommu_domain *domain,
 		adreno_dispatcher_schedule(device);
 	}
 
-	ptbase = KGSL_IOMMU_GET_CTX_REG(iommu, iommu_unit,
-					iommu_dev->ctx_id, TTBR0);
+	ptbase = KGSL_IOMMU_GET_CTX_REG_TTBR0(iommu, iommu_unit,
+				iommu_dev->ctx_id);
 
 	fsr = KGSL_IOMMU_GET_CTX_REG(iommu, iommu_unit,
 		iommu_dev->ctx_id, FSR);
@@ -1654,19 +1651,10 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 						iommu_unit->dev[j].ctx_id,
 						SCTLR, sctlr_val);
 			}
-			if (sizeof(phys_addr_t) > sizeof(unsigned long)) {
-				iommu_unit->dev[j].default_ttbr0 =
-						KGSL_IOMMU_GET_CTX_REG_Q(iommu,
-						iommu_unit,
-						iommu_unit->dev[j].ctx_id,
-						TTBR0);
-			} else {
-				iommu_unit->dev[j].default_ttbr0 =
-						KGSL_IOMMU_GET_CTX_REG(iommu,
-						iommu_unit,
-						iommu_unit->dev[j].ctx_id,
-						TTBR0);
-			}
+			iommu_unit->dev[j].default_ttbr0 =
+				KGSL_IOMMU_GET_CTX_REG_TTBR0(iommu,
+					iommu_unit,
+					iommu_unit->dev[j].ctx_id);
 		}
 	}
 	kgsl_iommu_lock_rb_in_tlb(mmu);
@@ -1865,9 +1853,9 @@ kgsl_iommu_get_current_ptbase(struct kgsl_mmu *mmu)
 		return 0;
 	/* Return the current pt base by reading IOMMU pt_base register */
 	kgsl_iommu_enable_clk(mmu, KGSL_IOMMU_CONTEXT_USER);
-	pt_base = KGSL_IOMMU_GET_CTX_REG(iommu, (&iommu->iommu_units[0]),
-					KGSL_IOMMU_CONTEXT_USER,
-					TTBR0);
+	pt_base = KGSL_IOMMU_GET_CTX_REG_TTBR0(iommu,
+				(&iommu->iommu_units[0]),
+				KGSL_IOMMU_CONTEXT_USER);
 	kgsl_iommu_disable_clk_on_ts(mmu, 0, false);
 	return pt_base & KGSL_IOMMU_CTX_TTBR0_ADDR_MASK;
 }
@@ -1927,20 +1915,14 @@ static int kgsl_iommu_default_setstate(struct kgsl_mmu *mmu,
 			pt_base &= KGSL_IOMMU_CTX_TTBR0_ADDR_MASK;
 			pt_val &= ~KGSL_IOMMU_CTX_TTBR0_ADDR_MASK;
 			pt_val |= pt_base;
-			if (sizeof(phys_addr_t) > sizeof(unsigned long)) {
-				KGSL_IOMMU_SET_CTX_REG_Q(iommu,
+			KGSL_IOMMU_SET_CTX_REG_TTBR0(iommu,
 					(&iommu->iommu_units[i]),
-					KGSL_IOMMU_CONTEXT_USER, TTBR0, pt_val);
-			} else {
-				KGSL_IOMMU_SET_CTX_REG(iommu,
-					(&iommu->iommu_units[i]),
-					KGSL_IOMMU_CONTEXT_USER, TTBR0, pt_val);
-			}
+					KGSL_IOMMU_CONTEXT_USER, pt_val);
 
 			mb();
-			temp = KGSL_IOMMU_GET_CTX_REG(iommu,
+			temp = KGSL_IOMMU_GET_CTX_REG_TTBR0(iommu,
 				(&iommu->iommu_units[i]),
-				KGSL_IOMMU_CONTEXT_USER, TTBR0);
+				KGSL_IOMMU_CONTEXT_USER);
 		}
 	}
 	/* Flush tlb */

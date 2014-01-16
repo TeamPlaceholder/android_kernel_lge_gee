@@ -53,6 +53,7 @@
 #include "mpq8092-iommu-domains.dtsi"
 #include "msm-gdsc.dtsi"
 #include "mpq8092-ion.dtsi"
+#include "mpq8092-gpu.dtsi"
 #include "mpq8092-pinctrl.dtsi"
 #include "mpq8092-smp2p.dtsi"
 #include "mpq8092-coresight.dtsi"
@@ -846,6 +847,15 @@
 		qcom,iommu-cpz-partition = <0>;
 	};
 
+	dw: msm-demod-wrapper@fc600000 {
+		compatible = "qcom,msm-demod-wrapper";
+		reg = <0xfc600000 0xdd000>;
+		reg-names = "demod-wrapper-base";
+		vdd-supply = <&gdsc_bcss>;
+		adc-supply = <&pma8084_l27>;
+	};
+
+
         qcom,msm-rng@f9bff000 {
 		compatible = "qcom,msm-rng";
 		reg = <0xf9bff000 0x200>;
@@ -1099,6 +1109,7 @@
 };
 
 &gdsc_mdss {
+	clock-names = "core_clk", "lut_clk";
 	status = "ok";
 };
 
@@ -1107,10 +1118,14 @@
 };
 
 &gdsc_vpu {
+	clock-names = "core_clk", "maple_clk", "bus_clk", "frc_xin_clk",
+			   "hdmc_frcf_clk", "sdmc_frcs_clk", "sdme_frcf_clk",
+			   "vproc_clk", "vdp_xin_clk";
 	status = "ok";
 };
 
 &gdsc_oxili_gx {
+	clock-names = "core_clk";
 	status = "ok";
 };
 
@@ -1123,6 +1138,7 @@
 };
 
 &gdsc_vcap {
+	clock-names = "bus_clk", "vp_clk";
 	status = "ok";
 };
 

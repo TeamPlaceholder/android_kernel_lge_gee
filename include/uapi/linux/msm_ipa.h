@@ -152,6 +152,7 @@ enum ipa_client_type {
 	IPA_CLIENT_APPS_WAN_CONS,
 	IPA_CLIENT_Q6_LAN_CONS,
 	IPA_CLIENT_Q6_WAN_CONS,
+	IPA_CLIENT_Q6_DUN_CONS,
 
 	IPA_CLIENT_MAX,
 };
@@ -212,8 +213,10 @@ enum ipa_wlan_event {
 	WLAN_STA_CONNECT,
 	WLAN_STA_DISCONNECT,
 	WLAN_CLIENT_CONNECT_EX,
-	IPA_EVENT_MAX
+	IPA_WLAN_EVENT_MAX
 };
+
+#define IPA_EVENT_MAX ((int)IPA_WLAN_EVENT_MAX)
 
 /**
  * enum ipa_rm_resource_name - IPA RM clients identification names

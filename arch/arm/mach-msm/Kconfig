@@ -92,7 +92,6 @@ config ARCH_MPQ8092
 	select MSM_QDSP6_APRV2 if SND_SOC
 	select MSM_NOPM
 	select MEMORY_HOLE_CARVEOUT
-	select DONT_MAP_HOLE_AFTER_MEMBANK0
 	select QMI_ENCDEC
 	select MIGHT_HAVE_PCI
 	select ARCH_SUPPORTS_MSI
@@ -127,8 +126,8 @@ config ARCH_FSM9900
 	select MIGHT_HAVE_PCI
 	select MSM_IRQ
 
-config ARCH_MSMKRYPTON
-	bool "MSMKRYPTON"
+config ARCH_MDM9630
+	bool "MDM9630"
 	select ARM_GIC
 	select MSM_SCM
 	select CPU_V7
@@ -370,7 +369,7 @@ config PHYS_OFFSET
 	default "0x00000000" if ARCH_MSM8610
 	default "0x00000000" if ARCH_MSMSAMARIUM
 	default "0x40000000" if ARCH_FSM9900
-	default "0x00000000" if ARCH_MSMKRYPTON
+	default "0x00000000" if ARCH_MDM9630
 	default "0x00200000" if !MSM_STACKED_MEMORY
 	default "0x10000000"
 
@@ -671,17 +670,6 @@ config MSM_SMP2P_TEST
 	  are used to verify the local and remote
 	  implementations.
 
-config EXTERNAL_MDM
-	tristate "External modem driver"
-	default n
-	help
-	  Enable communication with external modem.
-	  Support power up and shut down external modem
-	  by using gpios. Monitor external modem status
-	  for crashes and perform ram dump collection
-	  as well as a restart of the modem in the event
-	  of a crash.
-
 config MSM_SMD_LOGGING
 	depends on MSM_SMD
 	default y
@@ -692,44 +680,8 @@ config MSM_SMD_LOGGING
 
 	  If in doubt, say yes.
 
-config MSM_IPC_ROUTER
-	depends on NET
-	default n
-	bool "MSM IPC Router support"
-	help
-	  Support for the MSM IPC Router for communication between
-	  the APPs and the MODEM
-
-config MSM_IPC_ROUTER_SMD_XPRT
-	depends on MSM_SMD
-	depends on MSM_IPC_ROUTER
-	default n
-	bool "MSM SMD XPRT Layer"
-	help
-	  SMD Transport Layer for IPC Router
-
-config MSM_IPC_ROUTER_HSIC_XPRT
-	depends on USB_QCOM_IPC_BRIDGE
-	depends on MSM_IPC_ROUTER
-	bool "MSM HSIC XPRT Layer"
-	help
-	  HSIC Transport Layer that enables off-chip communication of
-	  IPC Router. When the HSIC endpoint becomes available, this layer
-	  registers the transport with IPC Router and enable message
-	  exchange.
-
-config MSM_IPC_ROUTER_SECURITY
-	depends on MSM_IPC_ROUTER
-	bool "MSM IPC Router Security support"
-	help
-	  This feature of IPC Router will enforce security rules
-	  configured by a security script from the user-space. IPC Router
-	  once configured with the security rules will ensure that the
-	  sender of the message to a service belongs to the relevant
-	  Linux group as configured by the security script.
-
 config MSM_QMI_INTERFACE
-	depends on MSM_IPC_ROUTER
+	depends on IPC_ROUTER
 	depends on QMI_ENCDEC
 	default n
 	bool "MSM QMI Interface Library"
@@ -987,6 +939,16 @@ config MSM_PIL
 	  brought out of reset.
 
 	  Say yes to support these devices.
+
+config MSM_PIL_SSR_GENERIC
+	tristate "MSM Subsystem Boot Support"
+	depends on MSM_PIL && MSM_SUBSYSTEM_RESTART
+	help
+	  Support for booting and shutting down MSM Subsystem processors.
+	  This driver also monitors the SMSM status bits and the watchdog
+	  interrupt for the subsystem and restarts it on a watchdog bite
+	  or a fatal error. Subsystems include LPASS, Venus, VPU, WCNSS and
+	  BCSS.
 
 config MSM_PIL_LPASS_QDSP6V5
 	tristate "LPASS QDSP6v5 (Hexagon) Boot Support"

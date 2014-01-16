@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -103,7 +103,7 @@ static const int ep_mapping[2][IPA_CLIENT_MAX] = {
 	[IPA_2_0][IPA_CLIENT_USB4_CONS]          = 18,
 	[IPA_2_0][IPA_CLIENT_WLAN4_CONS]         = 18,
 	[IPA_2_0][IPA_CLIENT_HSIC5_CONS]         = -1,
-	[IPA_2_0][IPA_CLIENT_USB_CONS]           = 10,
+	[IPA_2_0][IPA_CLIENT_USB_CONS]           = 15,
 	[IPA_2_0][IPA_CLIENT_A2_EMBEDDED_CONS]   = -1,
 	[IPA_2_0][IPA_CLIENT_A2_TETHERED_CONS]   = -1,
 	[IPA_2_0][IPA_CLIENT_A5_LAN_WAN_CONS]    = -1,
@@ -111,6 +111,7 @@ static const int ep_mapping[2][IPA_CLIENT_MAX] = {
 	[IPA_2_0][IPA_CLIENT_APPS_WAN_CONS]      =  5,
 	[IPA_2_0][IPA_CLIENT_Q6_LAN_CONS]        =  8,
 	[IPA_2_0][IPA_CLIENT_Q6_WAN_CONS]        =  9,
+	[IPA_2_0][IPA_CLIENT_Q6_DUN_CONS]        = 10,
 };
 
 static struct msm_bus_vectors ipa_init_vectors_v1_1[]  = {
@@ -1971,6 +1972,44 @@ int ipa_cfg_ep_hdr_ext(u32 clnt_hdl,
 	return 0;
 }
 EXPORT_SYMBOL(ipa_cfg_ep_hdr_ext);
+
+/**
+ * ipa_cfg_ep_hdr() -  IPA end-point Control configuration
+ * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
+ * @ipa_ep_cfg_ctrl:	[in] IPA end-point configuration params
+ *
+ * Returns:	0 on success, negative on failure
+ */
+int ipa_cfg_ep_ctrl(u32 clnt_hdl, const struct ipa_ep_cfg_ctrl *ep_ctrl)
+{
+	u32 reg_val = 0;
+
+	if (clnt_hdl >= IPA_NUM_PIPES || clnt_hdl < 0 || ep_ctrl == NULL) {
+		IPAERR("bad parm, clnt_hdl = %d\n", clnt_hdl);
+		return -EINVAL;
+	}
+	IPADBG("pipe=%d ep_suspend=%d, ep_delay=%d\n",
+		clnt_hdl,
+		ep_ctrl->ipa_ep_suspend,
+		ep_ctrl->ipa_ep_delay);
+
+
+	IPA_SETFIELD_IN_REG(reg_val, ep_ctrl->ipa_ep_suspend,
+		IPA_ENDP_INIT_CTRL_N_ENDP_SUSPEND_SHFT,
+		IPA_ENDP_INIT_CTRL_N_ENDP_SUSPEND_BMSK);
+
+	IPA_SETFIELD_IN_REG(reg_val, ep_ctrl->ipa_ep_delay,
+			IPA_ENDP_INIT_CTRL_N_ENDP_DELAY_SHFT,
+			IPA_ENDP_INIT_CTRL_N_ENDP_DELAY_BMSK);
+
+	ipa_write_reg(ipa_ctx->mmio,
+		IPA_ENDP_INIT_CTRL_N_OFST(clnt_hdl), reg_val);
+
+	return 0;
+
+}
+EXPORT_SYMBOL(ipa_cfg_ep_ctrl);
+
 
 const char *ipa_get_mode_type_str(enum ipa_mode_type mode)
 {

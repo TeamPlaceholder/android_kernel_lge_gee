@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -203,7 +203,6 @@ static void ipa_tx_switch_to_intr_mode(struct ipa_sys_context *sys)
 	return;
 
 fail:
-	IPA_STATS_INC_CNT(ipa_ctx->stats.x_intr_repost_tx);
 	queue_delayed_work(sys->wq, &sys->switch_to_intr_work,
 			msecs_to_jiffies(1));
 	return;
@@ -610,7 +609,6 @@ int ipa_send_cmd(u16 num_desc, struct ipa_desc *descr)
 		wait_for_completion(&desc->xfer_done);
 	}
 
-	IPA_STATS_INC_IC_CNT(num_desc, descr, ipa_ctx->stats.imm_cmds);
 bail:
 	ipa_dec_client_disable_clks();
 	return result;
@@ -767,7 +765,6 @@ static void ipa_rx_switch_to_intr_mode(struct ipa_sys_context *sys)
 	return;
 
 fail:
-	IPA_STATS_INC_CNT(ipa_ctx->stats.x_intr_repost);
 	queue_delayed_work(sys->wq, &sys->switch_to_intr_work,
 			msecs_to_jiffies(1));
 }
@@ -946,28 +943,40 @@ int ipa_setup_sys_pipe(struct ipa_sys_connect_params *sys_in, u32 *clnt_hdl)
 		goto fail_wq;
 	}
 
+	ep->sys->ep = ep;
 	if (ipa_assign_policy(sys_in, ep->sys)) {
 		IPAERR("failed to sys ctx for client %d\n", sys_in->client);
 		result = -ENOMEM;
 		goto fail_gen2;
 	}
 
+	ep->skip_ep_cfg = sys_in->skip_ep_cfg;
 	ep->valid = 1;
 	ep->client = sys_in->client;
 	ep->client_notify = sys_in->notify;
 	ep->priv = sys_in->priv;
-	ep->sys->ep = ep;
 	ep->avail_fifo_desc =
 		((sys_in->desc_fifo_sz/sizeof(struct sps_iovec))-1);
 	INIT_LIST_HEAD(&ep->sys->head_desc_list);
 
 	spin_lock_init(&ep->sys->spinlock);
 
-	if (ipa_cfg_ep(ipa_ep_idx, &sys_in->ipa_ep_cfg)) {
-		IPAERR("fail to configure EP.\n");
+	result = ipa_enable_data_path(ipa_ep_idx);
+	if (result) {
+		IPAERR("enable data path failed res=%d clnt=%d.\n", result,
+				ipa_ep_idx);
 		goto fail_gen2;
 	}
-	IPADBG("ep configuration successful\n");
+
+	if (!ep->skip_ep_cfg) {
+		if (ipa_cfg_ep(ipa_ep_idx, &sys_in->ipa_ep_cfg)) {
+			IPAERR("fail to configure EP.\n");
+			goto fail_gen2;
+		}
+		IPADBG("ep configuration successful\n");
+	} else {
+		IPADBG("skipping ep configuration\n");
+	}
 
 	/* Default Config */
 	ep->ep_hdl = sps_alloc_endpoint();
@@ -1045,6 +1054,9 @@ int ipa_setup_sys_pipe(struct ipa_sys_connect_params *sys_in, u32 *clnt_hdl)
 		ipa_allocate_wlan_rx_common_cache(IPA_WLAN_COMM_RX_POOL_LOW);
 	}
 
+	if (!ep->skip_ep_cfg && IPA_CLIENT_IS_PROD(sys_in->client))
+		ipa_install_dflt_flt_rules(ipa_ep_idx);
+
 	IPADBG("client %d (ep: %d) connected sys=%p\n", sys_in->client,
 			ipa_ep_idx, ep->sys);
 
@@ -1088,6 +1100,7 @@ int ipa_teardown_sys_pipe(u32 clnt_hdl)
 	if (IPA_CLIENT_IS_CONS(ep->client))
 		ipa_cleanup_rx(ep->sys);
 
+	ipa_disable_data_path(clnt_hdl);
 	sps_disconnect(ep->ep_hdl);
 	dma_free_coherent(NULL, ep->connect.desc.size,
 			  ep->connect.desc.base,
@@ -1095,6 +1108,7 @@ int ipa_teardown_sys_pipe(u32 clnt_hdl)
 	sps_free_endpoint(ep->ep_hdl);
 	destroy_workqueue(ep->sys->wq);
 	kfree(ep->sys);
+	ipa_delete_dflt_flt_rules(clnt_hdl);
 	memset(ep, 0, sizeof(struct ipa_ep_context));
 
 	IPADBG("client (ep: %d) disconnected\n", clnt_hdl);
@@ -1120,8 +1134,7 @@ static void ipa_tx_comp_usr_notify_release(void *user1, void *user2)
 
 	IPADBG("skb=%p ep=%d\n", skb, ep_idx);
 
-	IPA_STATS_INC_TX_CNT(ep_idx, ipa_ctx->stats.tx_sw_pkts,
-			ipa_ctx->stats.tx_hw_pkts);
+	IPA_STATS_INC_CNT(ipa_ctx->stats.tx_pkts_compl);
 
 	if (ipa_ctx->ep[ep_idx].client_notify)
 		ipa_ctx->ep[ep_idx].client_notify(ipa_ctx->ep[ep_idx].priv,
@@ -1224,7 +1237,7 @@ int ipa_tx_dp(enum ipa_client_type dst, struct sk_buff *skb,
 			IPAERR("fail to send immediate command\n");
 			goto fail_send;
 		}
-		IPA_STATS_INC_CNT(ipa_ctx->stats.imm_cmds[IPA_IP_PACKET_INIT]);
+		IPA_STATS_INC_CNT(ipa_ctx->stats.tx_sw_pkts);
 	} else {
 		/* HW data path */
 		desc[0].pyld = skb->data;
@@ -1238,6 +1251,7 @@ int ipa_tx_dp(enum ipa_client_type dst, struct sk_buff *skb,
 			IPAERR("fail to send skb\n");
 			goto fail_gen;
 		}
+		IPA_STATS_INC_CNT(ipa_ctx->stats.tx_hw_pkts);
 	}
 
 	return 0;
@@ -1567,12 +1581,13 @@ begin:
 		IPADBG("STATUS opcode=%d src=%d dst=%d len=%d\n",
 				status->status_opcode, status->endp_src_idx,
 				status->endp_dest_idx, status->pkt_len);
-
 		if (status->status_opcode != IPA_HW_STATUS_OPCODE_PACKET) {
 			IPAERR("unsupported opcode\n");
 			skb_pull(skb, IPA_PKT_STATUS_SIZE);
 			continue;
 		}
+		IPA_STATS_EXCP_CNT(status->exception,
+				ipa_ctx->stats.rx_excp_pkts);
 		if (status->endp_dest_idx >= IPA_NUM_PIPES ||
 			status->endp_src_idx >= IPA_NUM_PIPES ||
 			status->pkt_len > IPA_GENERIC_AGGR_BYTE_LIMIT * 1024) {
@@ -1752,6 +1767,7 @@ static int ipa_wan_rx_pyld_hdlr(struct sk_buff *skb,
 			skb_pull(skb, IPA_PKT_STATUS_SIZE);
 			continue;
 		}
+		IPA_STATS_INC_CNT(ipa_ctx->stats.rx_pkts);
 		if (status->endp_dest_idx >= IPA_NUM_PIPES ||
 			status->endp_src_idx >= IPA_NUM_PIPES ||
 			status->pkt_len > IPA_GENERIC_AGGR_BYTE_LIMIT * 1024) {
@@ -2074,11 +2090,20 @@ static int ipa_assign_policy(struct ipa_sys_connect_params *in,
 	} else if (ipa_ctx->ipa_hw_type == IPA_HW_v2_0) {
 		in->ipa_ep_cfg.status.status_en = true;
 		if (IPA_CLIENT_IS_PROD(in->client)) {
-			sys->policy = IPA_POLICY_NOINTR_MODE;
-			sys->sps_option = SPS_O_AUTO_ENABLE;
-			sys->sps_callback = NULL;
-			in->ipa_ep_cfg.status.status_ep =
-				ipa_get_ep_mapping(IPA_CLIENT_APPS_LAN_CONS);
+			if (!sys->ep->skip_ep_cfg) {
+				sys->policy = IPA_POLICY_NOINTR_MODE;
+				sys->sps_option = SPS_O_AUTO_ENABLE;
+				sys->sps_callback = NULL;
+				in->ipa_ep_cfg.status.status_ep =
+					ipa_get_ep_mapping(
+						IPA_CLIENT_APPS_LAN_CONS);
+			} else {
+				sys->policy = IPA_POLICY_INTR_MODE;
+				sys->sps_option = (SPS_O_AUTO_ENABLE |
+						SPS_O_EOT);
+				sys->sps_callback =
+					ipa_sps_irq_tx_no_aggr_notify;
+			}
 		} else {
 			sys->policy = IPA_POLICY_INTR_MODE;
 			sys->sps_option = (SPS_O_AUTO_ENABLE | SPS_O_EOT);
