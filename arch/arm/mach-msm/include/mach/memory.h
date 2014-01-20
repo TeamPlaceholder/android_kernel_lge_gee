@@ -58,3 +58,10 @@ extern char *__compat_exports_end[];
 #endif
 
 #define CONSISTENT_DMA_SIZE	(SZ_1M * 14)
+
+#define MAX_PHYSMEM_BITS 32
+#define SECTION_SIZE_BITS 28
+#define MAX_NR_REGIONS 32
+
+#define NR_REGIONS_PER_BANK 8
+
