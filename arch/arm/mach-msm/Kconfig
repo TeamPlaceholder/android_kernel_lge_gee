@@ -2,6 +2,42 @@ if ARCH_MSM
 
 menu "MSM SoC Type"
 
+config ARCH_MSM8960
+	bool "MSM8960"
+	select ARCH_MSM_KRAITMP
+	select ARM_GIC
+	select CPU_V7
+	select GPIO_MSM_V2
+	select MSM_GPIOMUX
+	select MSM_SCM if SMP
+	select MSM_DIRECT_SCLK_ACCESS
+	select REGULATOR
+	select MSM_RPM_REGULATOR
+	select MSM_RPM
+	select MSM_XO
+	select MSM_QDSP6_APR
+	select MSM_QDSP6_CODECS
+	select MSM_PIL
+	select MSM_AUDIO_QDSP6 if SND_SOC
+	select CPU_HAS_L2_PMU
+	select MSM_SPM_V2
+	select MSM_L2_SPM
+	select MSM_NATIVE_RESTART
+	select DONT_MAP_HOLE_AFTER_MEMBANK0
+	select MSM_REMOTE_SPINLOCK_SFPB
+	select ARCH_SPARSEMEM_ENABLE
+	select ARCH_HAS_HOLES_MEMORYMODEL
+	select CLEANCACHE
+	select QCACHE
+	select MSM_MULTIMEDIA_USE_ION
+	select MULTI_IRQ_HANDLER
+	select MSM_PM8X60 if PM
+	select HOLES_IN_ZONE if SPARSEMEM
+	select ARM_HAS_SG_CHAIN
+	select MSM_KRAIT_WFE_FIXUP
+	select MSM_IOMMU_GPU_SYNC
+	select MSM_CPU_PWRCTL
+
 config ARCH_MSM8974
 	bool "MSM8974"
 	select ARCH_MSM_KRAITMP
